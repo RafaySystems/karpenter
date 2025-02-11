@@ -142,7 +142,26 @@ func areStaticFieldsDrifted(nodePool *v1.NodePool, nodeClaim *v1.NodeClaim) clou
 }
 
 func areRequirementsDrifted(nodePool *v1.NodePool, nodeClaim *v1.NodeClaim) cloudprovider.DriftReason {
-	nodepoolReq := scheduling.NewNodeSelectorRequirementsWithMinValues(nodePool.Spec.Template.Spec.Requirements...)
+	var reqs []v1.NodeSelectorRequirementWithMinValues
+	for _, req := range nodePool.Spec.Template.Spec.Requirements {
+		reqs = append(reqs, req)
+	}
+	reqs = append(reqs, v1.NodeSelectorRequirementWithMinValues{
+		NodeSelectorRequirement: corev1.NodeSelectorRequirement{
+			Key:      "gaap.k8smgmt.io/gaapnodeclass",
+			Operator: corev1.NodeSelectorOpIn,
+			Values:   []string{nodePool.Spec.Template.Spec.NodeClassRef.Name},
+		},
+	})
+	reqs = append(reqs, v1.NodeSelectorRequirementWithMinValues{
+		NodeSelectorRequirement: corev1.NodeSelectorRequirement{
+			Key:      "karpenter.sh/nodepool",
+			Operator: corev1.NodeSelectorOpIn,
+			Values:   []string{nodePool.Name},
+		},
+	})
+
+	nodepoolReq := scheduling.NewNodeSelectorRequirementsWithMinValues(reqs...)
 	nodeClaimReq := scheduling.NewLabelRequirements(nodeClaim.Labels)
 	fmt.Println(nodepoolReq)
 	fmt.Println(nodeClaimReq)
