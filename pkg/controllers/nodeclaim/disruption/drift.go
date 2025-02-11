@@ -162,9 +162,17 @@ func areRequirementsDrifted(nodePool *v1.NodePool, nodeClaim *v1.NodeClaim) clou
 	})
 
 	nodepoolReq := scheduling.NewNodeSelectorRequirementsWithMinValues(reqs...)
-	nodeClaimReq := scheduling.NewLabelRequirements(nodeClaim.Labels)
-	fmt.Println(nodepoolReq)
-	fmt.Println(nodeClaimReq)
+
+	filteredLabels := map[string]string{}
+	for k, v := range nodeClaim.Labels {
+		if k != corev1.LabelInstanceTypeStable {
+			filteredLabels[k] = v
+		}
+
+	}
+
+	nodeClaimReq := scheduling.NewLabelRequirements(filteredLabels)
+
 	// Every nodepool requirement is compatible with the NodeClaim label set
 	if nodeClaimReq.Compatible(nodepoolReq) != nil {
 		return RequirementsDrifted
